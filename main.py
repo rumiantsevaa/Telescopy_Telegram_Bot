@@ -101,7 +101,7 @@ def handle_video(message):
                                   " размер видео: минимальные размеры 512 х 512 пикселей. Подождите...")
         batch_content_small = f"""
                 cd "{output_folder}"
-                ffmpeg -y -i "{input_file}" -vf scale=512:512 -t 59 -c:v libx264 -c:a copy "{output_file}"
+                ffmpeg -y -i "{input_file}" -vf crop='min(iw,ih)':'min(iw,ih)',scale=512:512 -t 59 -c:v libx264 -c:a copy "{output_file}"
                 """
 
         with open("my_script.bat", "w+") as file:
