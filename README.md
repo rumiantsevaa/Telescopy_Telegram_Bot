@@ -1,5 +1,7 @@
 # Telescopy Telegram Bot @TelescopyRBot
 
+_Russian version https://github.com/rumiantsevaa/Telescopy_Telegram_Bot/wiki/READme.russian_
+
 The main goal of creating the bot was to make it simple yet useful for many users, providing essential functionality without any hidden motives or unethical actions. The bot was developed in a way that it doesn't steal user data, doesn't distract them with intrusive advertising, and doesn't require payment for basic features.
 
 ![image](https://github.com/rumiantsevaa/Telescopy_Telegram_Bot/assets/89034072/77f644fc-5c6f-4bbb-83fc-33ba45036789)
