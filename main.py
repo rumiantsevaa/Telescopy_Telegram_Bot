@@ -22,7 +22,8 @@ def help_handler(message):
                                                    'дождитесь окончания.\n'
                                                    'Есть некоторые требования к видео, от которых будет зависить '
                                                    'качество конвертации.\n'
-                                                   'Больше информации ищите в моем репозитории https://github.com/rumiantsevaa/Telescopy_Telegram_Bot')
+                                                   'Больше информации ищите в моем репозитории '
+                                                   'https://github.com/rumiantsevaa/Telescopy_Telegram_Bot')
 
     bot.register_next_step_handler(message, handle_video)
 
