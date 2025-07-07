@@ -16,10 +16,12 @@ jobs:
       - name: Create .env and zip project
         run: |
           mkdir -p deploy_env
-          cp -r * deploy_env/
+          shopt -s extglob
+          cp -r !(deploy_env|.git|.github) deploy_env/
           echo "TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}" >> deploy_env/.env
           echo "VIDEO_STORAGE=${{ secrets.VIDEO_STORAGE }}" >> deploy_env/.env
           zip -r deploy_env.zip deploy_env
+
 
       - name: Install dependencies
         run: pip install requests
