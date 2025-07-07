@@ -22,6 +22,11 @@ jobs:
       
       - name: Deploy to Koyeb
         run: |
-          koyeb service update telescopy-bot \
+          koyeb service create telescopy-bot \
+            --git github.com/rumiantsevaa/telescopy_telegram_bot \
+            --git-branch main \
+            --ports 80:http \
             --env TELEGRAM_TOKEN="${{ secrets.TELEGRAM_TOKEN }}" \
-            --env VIDEO_STORAGE="${{ secrets.VIDEO_STORAGE }}"
+            --env VIDEO_STORAGE="${{ secrets.VIDEO_STORAGE }}" \
+            --instance-type nano \
+            --regions fra
