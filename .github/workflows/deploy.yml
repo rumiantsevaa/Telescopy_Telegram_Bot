@@ -9,24 +9,19 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Install Koyeb CLI
-        run: |
-          curl https://downloads.koyeb.com/koyeb-cli/releases/v3/koyeb-cli_3.3.1_linux_amd64.tar.gz -O
-          tar xf koyeb-cli_3.3.1_linux_amd64.tar.gz
-          sudo mv koyeb /usr/local/bin/
-      
-      - name: Login to Koyeb
-        run: koyeb login ${{ secrets.KOYEB }}
-      
+      - name: Checkout
+        uses: actions/checkout@v3
+
       - name: Deploy to Koyeb
-        run: |
-          koyeb service create telescopy-bot \
-            --git github.com/rumiantsevaa/telescopy_telegram_bot \
-            --git-branch main \
-            --ports 80:http \
-            --env TELEGRAM_TOKEN="${{ secrets.TELEGRAM_TOKEN }}" \
-            --env VIDEO_STORAGE="${{ secrets.VIDEO_STORAGE }}" \
-            --instance-type nano \
-            --regions fra
+        uses: koyeb/action-git-deploy@v1
+        with:
+          app-name: telescopy-bot
+          service-name: telescopy-bot
+          service-env: |
+            TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}
+            VIDEO_STORAGE=${{ secrets.VIDEO_STORAGE }}
+          type: git
+          git-url: git@github.com:${{ github.repository }}.git
+          git-branch: main
+          org-name: ${{ secrets.KOYEB_ORGANIZATION_NAME }}
+          api-token: ${{ secrets.KOYEB_API_TOKEN }}
