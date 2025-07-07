@@ -1,4 +1,4 @@
-name: Deploy to PythonAnywhere via API
+name: Deploy to PythonAnywhere
 
 on:
   push:
@@ -13,54 +13,51 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Install requests
-        run: pip install requests
-
-      - name: Upload and run on PythonAnywhere
-        env:
-          PA_USERNAME: ${{ secrets.PA_USERNAME }}
-          PA_TOKEN: ${{ secrets.PA_TOKEN }}
-          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-          VIDEO_STORAGE: ${{ secrets.VIDEO_STORAGE }}
+      - name: Set up deploy env
         run: |
-          echo "Creating .env..."
           mkdir -p deploy_env
           cp -r * deploy_env/
-          echo "TELEGRAM_TOKEN=${TELEGRAM_TOKEN}" >> deploy_env/.env
-          echo "VIDEO_STORAGE=${VIDEO_STORAGE}" >> deploy_env/.env
-
-          echo "Zipping..."
+          echo "TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}" >> deploy_env/.env
+          echo "VIDEO_STORAGE=${{ secrets.VIDEO_STORAGE }}" >> deploy_env/.env
           zip -r deploy_env.zip deploy_env
 
-          echo "Uploading and running Python script"
-          python3 <<EOF
+      - name: Write deploy.py
+        run: |
+          cat > deploy.py <<EOF
 import requests
 
 username = '${{ secrets.PA_USERNAME }}'
 token = '${{ secrets.PA_TOKEN }}'
 
-# Upload ZIP archive
+# Upload zip to PythonAnywhere
 with open('deploy_env.zip', 'rb') as f:
-    upload = requests.post(
+    r = requests.post(
         f'https://www.pythonanywhere.com/api/v0/user/{username}/files/path/home/{username}/deploy_env.zip',
         headers={'Authorization': f'Token {token}'},
         files={'file': f}
     )
-print("Upload ZIP:", upload.status_code, upload.text)
+    print('Upload:', r.status_code, r.text)
 
-# Unzip and install requirements
-bash = requests.post(
+# Unzip + install
+cmd1 = "unzip -o ~/deploy_env.zip -d ~/ && pip3 install -r ~/deploy_env/requirements.txt"
+r1 = requests.post(
     f'https://www.pythonanywhere.com/api/v0/user/{username}/bash_tasks/',
     headers={'Authorization': f'Token {token}', 'Content-Type': 'application/json'},
-    json={"command": "unzip -o ~/deploy_env.zip -d ~/ && pip3 install -r ~/deploy_env/requirements.txt"}
+    json={"command": cmd1}
 )
-print("Unzip + install:", bash.status_code, bash.text)
+print('Install:', r1.status_code, r1.text)
 
-# Run the bot in background
-run = requests.post(
+# Run bot
+cmd2 = "cd ~/deploy_env && export $(cat .env | xargs) && nohup python3 main.py &"
+r2 = requests.post(
     f'https://www.pythonanywhere.com/api/v0/user/{username}/bash_tasks/',
     headers={'Authorization': f'Token {token}', 'Content-Type': 'application/json'},
-    json={"command": "cd ~/deploy_env && export $(cat .env | xargs) && nohup python3 main.py &"}
+    json={"command": cmd2}
 )
-print("Run bot:", run.status_code, run.text)
+print('Run bot:', r2.status_code, r2.text)
 EOF
+
+      - name: Install dependencies and run deploy
+        run: |
+          pip install requests
+          python3 deploy.py
