@@ -1,50 +1,124 @@
-# Telescopy Telegram Bot @TelescopyRBot
-
-## _This page is also available in [Russian version](https://github.com/rumiantsevaa/Telescopy_Telegram_Bot/wiki/README.ru)_
-
-The main goal of creating the bot was to make it simple yet useful for many users, providing essential functionality without any hidden motives or unethical actions. The bot was developed in a way that it doesn't steal user data, doesn't distract them with intrusive advertising, and doesn't require payment for basic features.
+# Telescopy Telegram Bot — [@TelescopyRBot](https://t.me/TelescopyRBot)
 
 ![image](https://github.com/rumiantsevaa/Telescopy_Telegram_Bot/assets/89034072/77f644fc-5c6f-4bbb-83fc-33ba45036789)
 
-## @TelescopyRBot is a Telegram bot designed to process videos sent by users and convert them into circular video messages. 
+> _This page is also available in [Russian version](https://github.com/rumiantsevaa/Telescopy_Telegram_Bot/wiki/README.ru)_
 
-# Let's start with requirements and limitations.
+---
+
+### 🌀 Overview
+
+[@TelescopyRBot](https://t.me/TelescopyRBot) is a privacy-first Telegram bot that converts user-uploaded videos into **circular video messages** (video notes) suitable for Telegram chats.
+
+- 🎥 Accepts standard video files  
+- 🟠 Converts them into round video notes  
+- ✂️ Automatically crops or scales to 512×512 px  
+- ⏱️ Trims video to max 59 seconds  
+- 🔒 Enforces **1 conversion per day per user**
+
+The bot is designed with **simplicity**, **privacy**, and **ethical use** in mind — no ads, no tracking, no payments.
+
+---
+
+### 🔧 Updates (July 2025)
+
+#### 🚀 Hosting & Deployment
+- Deployed to [PythonAnywhere](https://www.pythonanywhere.com/) for **24/7 uptime**
+- Added `pythonanywhere_starter.py` for seamless hosting
+
+#### ⏳ Daily Conversion Limit
+- Users can perform **1 conversion per day**
+- Limit resets after 24h and is tracked in a local SQLite database
+- Limit is applied **after** successful conversion
+
+#### 🔐 Security & Validation
+- `security.py` checks user and blocks potentially abusive patterns.
+- Blocked users are stored in `blocked_users.db`  
+- Only trusted users can access the bot
+
+#### 📁 Project Structure Highlights
+- `main.py` — core bot logic and video handling
+- `config.py` — stores tokens, paths, and usage control
+- `security.py` — implements anti-fraud and block logic
+- `requirements.txt` — lists dependencies
+- `pythonanywhere_starter.py` — clean launch for hosted environment
+
+---
+
+### ⚙️ How It Works
 
 ![image](https://github.com/rumiantsevaa/Telescopy_Telegram_Bot/assets/89034072/c587861a-343d-477a-8e50-23cad746824c)
 
-## Upon receiving a video, the bot checks its dimensions, cropping it to a 512x512 pixel square if larger, or scaling it to fit those dimensions if smaller. Additionally, the bot limits the video duration to 59 seconds. The converted video is then sent back to the user as a video note.
+1. User sends a video
+2. Bot downloads it and inspects dimensions
+3. If needed, crops or scales to 512x512
+4. Trims video to 59 seconds
+5. Sends back a video note (circular message)
 
 ![image](https://github.com/rumiantsevaa/Telescopy_Telegram_Bot/assets/89034072/43459275-8212-40d0-8167-8c141be0848c)
 
-# The bot supports the following commands:
+---
 
-* /start - Begin interaction with the bot and receive a welcome message.
+### 💬 Commands
 
-![image](https://github.com/rumiantsevaa/Telescopy_Telegram_Bot/assets/89034072/876fb656-e01a-419f-a1c7-1f6fc4e8653b)
+- `/start` — start the interaction and receive instructions
 
+  ![image](https://github.com/rumiantsevaa/Telescopy_Telegram_Bot/assets/89034072/876fb656-e01a-419f-a1c7-1f6fc4e8653b)
 
-* /help - Get information about the bot and instructions for usage.
+- `/help` — view bot features and usage instructions
 
-![image](https://github.com/rumiantsevaa/Telescopy_Telegram_Bot/assets/89034072/f9053978-d601-4d3f-8899-1b769dd7f21d)
+  ![image](https://github.com/rumiantsevaa/Telescopy_Telegram_Bot/assets/89034072/f9053978-d601-4d3f-8899-1b769dd7f21d)
 
-
-After sending a video, the bot automatically starts processing it. Once processing is complete, the user is prompted to send a new video or use the /start command to initiate processing again.
+After sending a video, the bot immediately starts processing. When finished, it prompts the user to send another or use `/start`.
 
 ![image](https://github.com/rumiantsevaa/Telescopy_Telegram_Bot/assets/89034072/5eee4a3c-a8ed-4b8c-906a-5d63a0d79260)
 
+---
 
-## The bot is created using Python and the telebot, os, subprocess, and ffmpeg libraries. Configuration data such as the Telegram token is stored in a separate file called config.py.
+### 📂 Deployment
 
-# Data Privacy in @TelescopyRBot
+To run the bot yourself:
 
-* Avoiding the use of any third-party libraries or services that could collect or transmit user data, relying only on standard Python libraries and the Telegram Bot API.
+1. Install dependencies:
 
-* Eliminating mentions of advertisements or attempts to integrate them. The bot provides its functionality honestly and without any hidden motives.
+    ```bash
+    git clone https://github.com/rumiantsevaa/Telescopy_Telegram_Bot.git
+    ```
 
-* Not requesting any paid subscription or payment for using the bot. All features are available for free, and the bot doesn't push paid services.
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-* Focusing the bot's code solely on its main task - processing videos and converting them into circular video notes. There are no extra or hidden features that could compromise user privacy or trust.
+3. Create the SQLite databases (limits and blocked users)
 
-* Providing clear and comprehensive /start and /help commands so that users can easily start using the bot and get necessary information about its capabilities.
+4. Set your `TELEGRAM_TOKEN` in `config.py`
 
-## Thus, a bot was created that truly adheres to the principles of honesty, transparency, and respect for users, providing the necessary functionality without any hidden motives or unethical actions.
+5. Launch the bot:
+
+    ```bash
+    python main.py
+    ```
+
+---
+
+### 🔒 Privacy & Ethics
+
+The bot was built with a strong stance on **user privacy**, **no surveillance**, and **free access**.
+
+- ✅ No ads, tracking, or telemetry
+- ✅ No cloud storage — all files are processed locally and deleted
+- ✅ No user profiling or data sharing
+- ✅ No payments or freemium traps
+- ✅ Simple purpose: video → video note, nothing else
+
+---
+
+### 🧠 Philosophy
+
+The core motivation behind @TelescopyRBot is:
+
+> "To make a useful tool without exploiting users, cluttering their experience, or compromising trust."
+
+If you're tired of bloated bots with ads, fees, and dark patterns — this one is for you ❤️
+
+---
