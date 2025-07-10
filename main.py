@@ -65,40 +65,59 @@ def handle_video(message):
         bot.send_message(chat_id, "Пожалуйста, отправьте видео 📼")
         return
 
-    file_id = message.video.file_id
     video = message.video
     duration = video.duration
     video_w = video.width
     video_h = video.height
+    file_size = video.file_size
+
+    MAX_VIDEO_SIZE = 100 * 1024 * 1024  # 100 MB
+    if file_size > MAX_VIDEO_SIZE:
+        bot.send_message(chat_id, "Видео слишком большое. Максимальный размер — 100 МБ.")
+        return
 
     if duration > 60:
         bot.send_message(chat_id, "Видео длиннее 1 минуты, оно будет автоматически обрезано до 60 секунд.")
 
-    file_info = bot.get_file(file_id)
+    # Загружаем видео
+    file_info = bot.get_file(video.file_id)
     downloaded_file = bot.download_file(file_info.file_path)
 
-    file_absolute_path = os.path.join(video_storage, file_info.file_path)
-    os.makedirs(os.path.dirname(file_absolute_path), exist_ok=True)
+    # Создаём безопасные пути
+    import secrets
+    safe_name = secrets.token_hex(8) + ".mp4"
+    input_file = os.path.join(video_storage, safe_name)
+    output_file = os.path.join(video_storage, "output_" + safe_name)
 
-    with open(file_absolute_path, 'wb') as new_file:
+    os.makedirs(video_storage, exist_ok=True)
+
+    # Сохраняем файл
+    with open(input_file, 'wb') as new_file:
         new_file.write(downloaded_file)
 
     bot.reply_to(message, "Видео сохранено. Дождитесь окончания конвертации.")
 
-    input_file = file_absolute_path
-    output_file = os.path.join(os.path.dirname(input_file), f"output_{os.path.basename(input_file)}")
-
     try:
         cut_duration = min(duration, 60)
 
+        # Создание фильтра
         if video_w > 512 and video_h > 512:
-            cmd = f'ffmpeg -y -i "{input_file}" -vf "crop=512:512" -t {cut_duration} -c:v libx264 -c:a copy "{output_file}"'
+            vf_filter = "crop=512:512"
         else:
             bot.send_message(chat_id, "Видео слишком маленькое. Пропорции могут быть искажены. Подождите...")
-            filter_cmd = "crop='min(iw,ih)':'min(iw,ih)',scale=512:512"
-            cmd = f'ffmpeg -y -i "{input_file}" -vf "{filter_cmd}" -t {cut_duration} -c:v libx264 -c:a copy "{output_file}"'
+            vf_filter = "crop='min(iw,ih)':'min(iw,ih)',scale=512:512"
 
-        subprocess.run(cmd, shell=True, check=True)
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", input_file,
+            "-vf", vf_filter,
+            "-t", str(cut_duration),
+            "-c:v", "libx264",
+            "-c:a", "copy",
+            output_file
+        ]
+
+        subprocess.run(cmd, check=True)
 
         with open(output_file, 'rb') as video_file:
             bot.send_video_note(
@@ -107,6 +126,7 @@ def handle_video(message):
                 duration=59,
                 length=512
             )
+
         register_usage(message.from_user.id)
 
     except subprocess.CalledProcessError as e:
@@ -114,12 +134,16 @@ def handle_video(message):
     except Exception as e:
         bot.send_message(chat_id, f"Непредвиденная ошибка: {e}")
     finally:
-        if os.path.exists(input_file):
-            os.remove(input_file)
-        if os.path.exists(output_file):
-            os.remove(output_file)
+        # Удаляем временные файлы
+        for f in [input_file, output_file]:
+            try:
+                if os.path.exists(f):
+                    os.remove(f)
+            except Exception as cleanup_error:
+                print(f"[WARN] Не удалось удалить файл: {f} — {cleanup_error}")
 
     continue_handler(message)
+
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def handle_text(message):
