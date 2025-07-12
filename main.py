@@ -3,8 +3,9 @@ import telebot
 from config import *
 from telebot import types
 import subprocess
-from datetime import datetime
+import secrets
 
+# Initializing Limits Database
 init_usage_db()
 
 class AccessDeniedError(Exception):
@@ -12,21 +13,31 @@ class AccessDeniedError(Exception):
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
+# Centralized access check
+
 def check_access(message) -> bool:
-    """
-    Centralized user access check
-    Combines all restrictions: anti-fraud measures, limits
-    """
     try:
+        # min age
+        if not is_account_older_than_1_year(message.from_user.id):
+            raise AccessDeniedError(
+                "@TelescopyRBot не поддерживает подозрительную активность и мошенническую деятельность!\n"
+                "Для использования бота необходим минимум 1 год с момента регистрации 🕜\n"
+                "Если вы верите, что были ограничены по ошибке, вы можете create 👁 issue на GitHub.")
+
+        # anti fraud
         if not anti_fraud_validation(message):
             print("[access] FAIL: anti_fraud_validation")
             raise AccessDeniedError("Заблокировано политикой безопасности.")
+
+        # black list
         if not if_trusted_user(message):
             print("[access] FAIL: if_trusted_user")
             raise AccessDeniedError("В списке заблокированных.")
+
+        # limit 1 video/day
         if not check_usage_limit(message.from_user.id):
             print("[access] FAIL: check_usage_limit")
-            raise AccessDeniedError("Достигнут лимит на использование (1 в сутки).")
+            raise AccessDeniedError("Достигнут лимит (1 видео в сутки).")
 
         print("[access] PASS")
         return True
@@ -34,6 +45,8 @@ def check_access(message) -> bool:
     except Exception as e:
         bot.reply_to(message, str(e))
         return False
+
+# Command handlers
 
 @bot.message_handler(commands=['start'])
 def start_handler(message):
@@ -51,16 +64,27 @@ def help_handler(message):
     if not check_access(message):
         return
     bot.send_message(chat_id=message.chat.id,
-                     text='Просто пришлите видео для обработки и получите его в виде видео-сообщения. '
+                     text='Просто пришлите видео и получите его в виде видео‑сообщения. '
                           'Конвертация может занять некоторое время, пожалуйста, дождитесь окончания ⌛️\n'
                           'Подробнее: https://github.com/rumiantsevaa/Telescopy_Telegram_Bot')
     bot.register_next_step_handler(message, handle_video)
 
+
+# Telegram Limit Constants
+
+MAX_TG_FILE_SIZE = 20 * 1024 * 1024   # 20MB
+MAX_DURATION = 60
+
+# Video processor
+
 @bot.message_handler(content_types=['video'])
 def handle_video(message):
     chat_id = message.chat.id
+
+    # Access check
     if not check_access(message):
         return
+
     if not message.video:
         bot.send_message(chat_id, "Пожалуйста, отправьте видео 📼")
         return
@@ -71,36 +95,49 @@ def handle_video(message):
     video_h = video.height
     file_size = video.file_size
 
-    MAX_VIDEO_SIZE = 100 * 1024 * 1024  # 100 MB
-    if file_size > MAX_VIDEO_SIZE:
-        bot.send_message(chat_id, "Видео слишком большое. Максимальный размер — 100 МБ.")
+    # New size check BEFORE calling get_file
+    if file_size > MAX_TG_FILE_SIZE:
+        bot.send_message(
+            chat_id,
+            f"Видео слишком большое: {file_size/1024/1024:.1f} МБ. Максимум — 20 МБ.\n"
+            "Пожалуйста, пришлите файл меньшего размера."
+        )
+        # Remain waiting for a new file
+        bot.register_next_step_handler(message, handle_video)
         return
 
-    if duration > 60:
-        bot.send_message(chat_id, "Видео длиннее 1 минуты, оно будет автоматически обрезано до 60 секунд.")
+    # Additional Duration Notice
+    if duration > MAX_DURATION:
+        bot.send_message(chat_id, "Видео длиннее 1 минуты, оно будет автоматически обрезано до 60 секунд ✂️")
 
-    # Загружаем видео
-    file_info = bot.get_file(video.file_id)
+    # Uploading video
+    try:
+        file_info = bot.get_file(video.file_id)
+    except telebot.apihelper.ApiTelegramException as e:
+        # Сatching a Telegram error if it occurs
+        bot.send_message(chat_id, f"Не удалось получить файл: {e}")
+        bot.register_next_step_handler(message, handle_video)
+        return
+
     downloaded_file = bot.download_file(file_info.file_path)
 
-    # Создаём безопасные пути
-    import secrets
+    # Create safe paths
     safe_name = secrets.token_hex(8) + ".mp4"
     input_file = os.path.join(video_storage, safe_name)
     output_file = os.path.join(video_storage, "output_" + safe_name)
 
     os.makedirs(video_storage, exist_ok=True)
 
-    # Сохраняем файл
+    # Save the file
     with open(input_file, 'wb') as new_file:
         new_file.write(downloaded_file)
 
-    bot.reply_to(message, "Видео сохранено. Дождитесь окончания конвертации.")
+    bot.reply_to(message, "Видео сохранено. Дождитесь окончания конвертации ⌛️")
 
     try:
-        cut_duration = min(duration, 60)
+        cut_duration = min(duration, MAX_DURATION)
 
-        # Создание фильтра
+        # Creating size filter
         if video_w > 512 and video_h > 512:
             vf_filter = "crop=512:512"
         else:
@@ -123,7 +160,7 @@ def handle_video(message):
             bot.send_video_note(
                 chat_id,
                 video_file,
-                duration=59,
+                duration=cut_duration,
                 length=512
             )
 
@@ -134,7 +171,7 @@ def handle_video(message):
     except Exception as e:
         bot.send_message(chat_id, f"Непредвиденная ошибка: {e}")
     finally:
-        # Удаляем временные файлы
+        # Delete temporary files
         for f in [input_file, output_file]:
             try:
                 if os.path.exists(f):
@@ -144,6 +181,7 @@ def handle_video(message):
 
     continue_handler(message)
 
+# Text fallback
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def handle_text(message):
@@ -155,6 +193,8 @@ def handle_text(message):
         help_handler(message)
     else:
         bot.send_message(message.chat.id, "Я вас не понимаю. Нажмите /start для списка команд.")
+
+# Service functions
 
 def continue_handler(message):
     bot.send_message(chat_id=message.chat.id,
