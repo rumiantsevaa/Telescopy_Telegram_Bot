@@ -19,6 +19,7 @@ def check_access(message) -> bool:
     try:
         # min age
         if not is_account_older_than_1_year(message.from_user.id):
+            print("[access] FAIL: is_account_older_than_1_year")
             raise AccessDeniedError(
                 "@TelescopyRBot не поддерживает подозрительную активность и мошенническую деятельность!\n"
                 "Для использования бота необходим минимум 1 год с момента регистрации 🕜\n"
