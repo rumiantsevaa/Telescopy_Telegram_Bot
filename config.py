@@ -1,6 +1,6 @@
 import sqlite3
 from datetime import datetime, timedelta
-from security import if_trusted_user, anti_fraud_validation
+from security import if_trusted_user, anti_fraud_validation, is_account_older_than_1_year
 
 TELEGRAM_TOKEN = 'SECRET'
 video_storage = "./videos"
@@ -31,10 +31,9 @@ def check_usage_limit(user_id: int, max_attempts: int = 1) -> bool:
 
         if result:
             last_time, count = datetime.fromisoformat(result[0]), result[1]
-            # Если за последние сутки достигнут лимит — отказ
             if (now - last_time < timedelta(days=1)) and (count >= max_attempts):
                 return False
-        return True  # доступ разрешён
+        return True  # Access allowed
 
 def register_usage(user_id: int):
     now = datetime.utcnow()
