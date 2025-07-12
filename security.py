@@ -15,4 +15,8 @@ def if_trusted_user(message: types.Message) -> bool:
 ''' SECRET '''
         return not c.fetchone()
 
+def is_account_older_than_1_year(user_id: int) -> bool:
+''' SECRET '''
+    return user_id <= MAX_ID_IN_2024
+
 init_db()
