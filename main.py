@@ -16,31 +16,37 @@ bot = telebot.TeleBot(TELEGRAM_TOKEN)
 # Centralized access check
 
 def check_access(message) -> bool:
+    uid   = message.from_user.id
+    uname = message.from_user.username
+
     try:
         # min age
-        if not is_account_older_than_1_year(message.from_user.id):
-            print("[access] FAIL: is_account_older_than_1_year")
+        if not is_account_older_than_1_year(uid):
+            print(f"[access] FAIL: age_check     id={uid}  username={uname}")
             raise AccessDeniedError(
                 "@TelescopyRBot не поддерживает подозрительную активность и мошенническую деятельность!\n"
                 "Для использования бота необходим минимум 1 год с момента регистрации 🕜\n"
                 "Если вы верите, что были ограничены по ошибке, вы можете create 👁 issue на GitHub.")
+        print(f"[access] PASS: age_check     id={uid}  username={uname}")
 
         # anti fraud
         if not anti_fraud_validation(message):
-            print("[access] FAIL: anti_fraud_validation")
+            print(f"[access] FAIL: anti_fraud    id={uid}  username={uname}")
             raise AccessDeniedError("Заблокировано политикой безопасности.")
+        print(f"[access] PASS: anti_fraud    id={uid}  username={uname}")
 
         # black list
         if not if_trusted_user(message):
-            print("[access] FAIL: if_trusted_user")
+            print(f"[access] FAIL: blacklist     id={uid}  username={uname}")
             raise AccessDeniedError("В списке заблокированных.")
+        print(f"[access] PASS: blacklist     id={uid}  username={uname}")
 
         # limit 1 video/day
-        if not check_usage_limit(message.from_user.id):
-            print("[access] FAIL: check_usage_limit")
+        if not check_usage_limit(uid):
+            print(f"[access] FAIL: usage_limit   id={uid}  username={uname}")
             raise AccessDeniedError("Достигнут лимит (1 видео в сутки).")
+        print(f"[access] PASS: usage_limit   id={uid}  username={uname}")
 
-        print("[access] PASS")
         return True
 
     except Exception as e:
