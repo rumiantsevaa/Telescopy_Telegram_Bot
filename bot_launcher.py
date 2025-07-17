@@ -60,10 +60,10 @@ def run():
 
     
     body = driver.find_element(By.TAG_NAME, "body")
-    body.send_keys(f"python3 pythonanywhere_starter.py\n")
+    command = 'python3 pythonanywhere_starter.py'
+    body.send_keys(command + Keys.ENTER)
     time.sleep(5)  
     driver.quit()
 
-if __name__ == "__main__":
-    run()
+run()
 
